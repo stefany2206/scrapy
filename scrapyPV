@@ -1,0 +1,29 @@
+import scrapy
+
+
+class PlazaveaSpiderSpider(scrapy.Spider):
+    name = "plazavea_spider"
+    allowed_domains = ["plazavea.com.pe"]
+    start_urls = ["https://plazavea.com.pe"]
+
+    def parse(self, response):
+        # Extraemos titulos, precios, descripciones y enlaces de productos
+        product_items = response.css('.product-item')
+
+        for product in product_items:
+            title = product.css('.product-title a::text').get()
+            price = product.css('.price-container .price::text').get()
+            description = product.css('.product-description::text').get()
+            product_link = product.css('.product-title a::attr(href)').get()
+
+            yield {
+                'title': title.strip() if title else None,
+                'price': price.strip() if price else None,
+                'description': description.strip() if description else None,
+                'product_link': response.urljoin(product_link) if product_link else None
+            }
+
+        #pagina siguiente
+        next_page = response.css('.pagination .next a::attr(href)').get()
+        if next_page:
+            yield response.follow(next_page, self.parse)
